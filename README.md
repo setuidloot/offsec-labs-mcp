@@ -38,7 +38,7 @@ can still be overridden via environment variables.
 | `offsec_get_machine_details` | OS, difficulty, points, groups, description, objectives, credentials | no |
 | `offsec_list_walkthroughs` | List walkthrough rows (host id, category, unblocked state) | no |
 | `offsec_get_walkthrough` | Retrieve an unblocked walkthrough's content | no |
-| `offsec_start_machine` | Power a machine on (creates a host instance, returns instance id + IP) | **yes** |
+| `offsec_start_machine` | Power a machine on (async deploy; see limitation below) | **yes** |
 | `offsec_stop_machine` | Power off a running instance (by instance id) | **yes** |
 | `offsec_revert_machine` | Revert a running instance to a clean state (by instance id) | **yes** |
 
@@ -48,8 +48,32 @@ Every tool takes `response_format`: `markdown` (default) or `json`.
 
 - **machine_id** accepts a numeric host id (`189`), a slug (`kevin-189`), or a
   name (`Kevin`). Numeric id is most reliable.
-- **instance_id** (for stop/revert) is the value returned by
-  `offsec_start_machine` — it is *not* the machine id.
+- **instance_id** (for stop/revert) is the host *instance* id — a different,
+  larger number (e.g. `32062625`). See the limitation below for how to get it.
+
+### Instance ids & the WebSocket limitation
+
+Start/stop/revert are **asynchronous** and verified against the live portal:
+
+| Action | Request | Response |
+|--------|---------|----------|
+| start | `POST /api/host-instances/` `{host:189}` | `201 {"message":"Deploy request in progress"}` |
+| stop | `PATCH /api/host-instances/<instanceId>/` `{action:"stop",context_learning_unit_id:189}` | `200 {"message":"Stop action in progress"}` |
+| revert | `PATCH /api/host-instances/<instanceId>/` `{action:"revert",context_learning_unit_id:189}` | `200 {"message":"Revert action in progress"}` |
+
+**The API never returns the instance id or the target IP.** Starting a machine
+only acknowledges the deploy. The portal learns the resulting instance id and IP
+over a **cookie-authenticated WebSocket** (`wss://portal.offsec.com/ws/events`),
+which a bearer-token client cannot drive — there is no REST endpoint that lists
+running instances (`GET /api/host-instances/` and friends all 405; the machine's
+`/api/learning-units/<id>/full` returns `ip:null`).
+
+Practical consequence: after `offsec_start_machine`, open the machine's page in
+the portal to read its **IP** and its **instance id** (the Stop button issues
+`PATCH /api/host-instances/<instanceId>/`). Pass that instance id to
+`offsec_stop_machine` / `offsec_revert_machine` (include `machine_id` for the
+`context_learning_unit_id`). OffSec allows only one concurrent machine, so a
+second start returns `user_has_started_machine` until you stop the first.
 
 ## Setup
 
@@ -91,10 +115,11 @@ Run `offsec_whoami` first to confirm auth.
 
 1. `offsec_list_labs` (group `Play`) → pick a machine id/slug.
 2. `offsec_get_machine_details` → read the brief.
-3. `offsec_start_machine` → note the **instance id** and **IP**.
-4. Connect via your OpenVPN client and work the box.
-5. `offsec_get_walkthrough` if you want the official walkthrough (unlocks after start).
-6. `offsec_stop_machine` (or `offsec_revert_machine`) with the instance id when done.
+3. `offsec_start_machine` → deploy begins (async).
+4. Open the machine's portal page → read its **IP** and **instance id**.
+5. Connect via your OpenVPN client and work the box.
+6. `offsec_get_walkthrough` if you want the official walkthrough (unlocks after start).
+7. `offsec_stop_machine` (or `offsec_revert_machine`) with the **instance id** when done.
 
 ## Testing
 

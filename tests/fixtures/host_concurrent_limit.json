@@ -1,0 +1,4 @@
+{
+  "code": "user_has_started_machine",
+  "message": "User has exceeded maximum concurrent machines limit."
+}

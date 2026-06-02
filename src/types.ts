@@ -63,14 +63,16 @@ export interface Walkthrough {
   url?: string;
 }
 
-/** A host instance created by starting a machine (POST /api/host-instances/). */
-export interface HostInstance {
-  /** Instance id — pass this to stop/revert. */
-  instanceId?: string;
-  host?: number;
-  ip?: string;
-  status?: string;
-  expiresAt?: string;
+/**
+ * Result of a start/stop/revert action. These endpoints are asynchronous: they
+ * return only an acknowledgement message (the deploy/stop/revert proceeds in the
+ * background). The resulting instance id and IP are NOT returned here — the
+ * portal delivers them over its cookie-authenticated WebSocket, so a bearer-only
+ * client cannot read them. See README "Instance ids & the WebSocket limitation".
+ */
+export interface ActionAck {
+  message?: string;
+  code?: string;
   raw?: unknown;
 }
 

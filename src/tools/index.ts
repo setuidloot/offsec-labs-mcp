@@ -25,7 +25,7 @@ import {
   extractCredentials,
   extractObjectives,
   labsFromResult,
-  normalizeHostInstance,
+  normalizeActionAck,
   normalizeLabDoc,
   normalizeMachineDetails,
   normalizeProfile,
@@ -490,15 +490,19 @@ Returns: the walkthrough content if unblocked, else guidance to start the machin
     "offsec_start_machine",
     {
       title: "Start an OffSec Machine",
-      description: `Start (power on) a machine on your account. This creates a host instance and returns its instance id and target IP. Save the instance id — you need it to stop or revert.
+      description: `Start (power on) a machine on your account. This is an ASYNCHRONOUS deploy: the API returns an acknowledgement ("Deploy request in progress"), and the machine comes online over the next minute or two.
 
-This performs an action on YOUR account. Not destructive (no data deleted), but it changes machine state and consumes lab time/quota.
+IMPORTANT: the API does NOT return the instance id or target IP — the portal delivers those over a WebSocket that a token-only client can't read. To stop or revert later, get the instance id from the running machine's portal page (the Stop button calls PATCH /api/host-instances/<instanceId>/), then pass it to offsec_stop_machine. The target IP is shown on that same page.
+
+OffSec allows only one concurrent machine; if one is already running you'll get a "user_has_started_machine" error — stop it first.
+
+This performs an action on YOUR account; it consumes lab time/quota.
 
 Args:
   - machine_id (string): numeric host id, slug, or name.
   - response_format ('markdown' | 'json').
 
-Returns (JSON): { instanceId, host, ip, status, expiresAt }.`,
+Returns (JSON): { action, host, message }.`,
       inputSchema: StartMachineSchema,
       annotations: {
         readOnlyHint: false,
@@ -514,21 +518,20 @@ Returns (JSON): { instanceId, host, ip, status, expiresAt }.`,
           method: "POST",
           data: { host: Number(hostId) },
         });
-        const inst = normalizeHostInstance(payload);
-        const structured = { action: "start", ...inst };
+        const ack = normalizeActionAck(payload);
+        const structured = { action: "start", host: Number(hostId), ...ack };
         if (params.response_format === ResponseFormat.JSON) {
           return toolResult(JSON.stringify(structured, null, 2), structured);
         }
         return toolResult(
           lines(
             `🚀 Start requested for host ${hostId}.`,
-            kv("Instance id", inst.instanceId),
-            kv("IP", inst.ip),
-            kv("Status", inst.status),
-            kv("Expires", inst.expiresAt),
+            kv("Status", ack.message ?? "Deploy request in progress"),
             "",
-            "The IP may take a minute to become reachable. Stop it with " +
-              "offsec_stop_machine using the instance id above."
+            "The machine deploys in the background (~1-2 min). The API does not " +
+              "return the instance id or IP — read them from the machine's portal " +
+              "page. To stop/revert, pass that instance id to offsec_stop_machine " +
+              "(with machine_id for context)."
           ),
           structured
         );
@@ -545,12 +548,13 @@ Returns (JSON): { instanceId, host, ip, status, expiresAt }.`,
     "offsec_stop_machine",
     {
       title: "Stop an OffSec Machine",
-      description: `Stop (power off) a running instance by its instance id (from offsec_start_machine).
+      description: `Stop (power off) a running instance by its instance id. Get the instance id from the running machine's portal page (offsec_start_machine cannot return it — see that tool's note).
 
-This changes machine state. Any unsaved in-machine progress on the target is lost on stop, so confirm intent before calling.
+Asynchronous: returns "Stop action in progress". If a deploy/revert is mid-flight you'll get "host_action_in_progress" — retry shortly.
 
 Args:
   - instance_id (string): the running instance id (NOT the machine id).
+  - machine_id (string, optional): the machine's host id/slug, sent as context.
   - response_format ('markdown' | 'json').`,
       inputSchema: InstanceActionSchema,
       annotations: {
@@ -562,16 +566,27 @@ Args:
     },
     async (params: z.infer<typeof InstanceActionSchema>) => {
       try {
+        // Verified against the live portal: stop is PATCH /api/host-instances/:id/
+        // with body { action:"stop", context_learning_unit_id:<hostId> }.
+        const ctx = params.machine_id ? parseHostId(params.machine_id) : undefined;
         const payload = await callEndpoint(ENDPOINTS.hostInstanceAction, {
-          method: "DELETE",
+          method: "PATCH",
           pathParams: { instanceId: params.instance_id },
+          data: {
+            action: "stop",
+            ...(ctx ? { context_learning_unit_id: Number(ctx) } : {}),
+          },
         });
-        const structured = { action: "stop", instanceId: params.instance_id, result: payload };
+        const ack = normalizeActionAck(payload);
+        const structured = { action: "stop", instanceId: params.instance_id, ...ack };
         if (params.response_format === ResponseFormat.JSON) {
           return toolResult(JSON.stringify(structured, null, 2), structured);
         }
         return toolResult(
-          `🛑 Stop requested for instance ${params.instance_id}.`,
+          lines(
+            `🛑 Stop requested for instance ${params.instance_id}.`,
+            kv("Status", ack.message)
+          ),
           structured
         );
       } catch (error) {
@@ -589,8 +604,11 @@ Args:
       title: "Revert an OffSec Machine",
       description: `Revert (reset to a clean state) a running instance by its instance id. Useful when a box gets into a bad state.
 
+Asynchronous: returns "Revert action in progress". If another action is mid-flight you'll get "host_action_in_progress" — retry shortly.
+
 Args:
   - instance_id (string): the running instance id.
+  - machine_id (string, optional): the machine's host id/slug, sent as context.
   - response_format ('markdown' | 'json').`,
       inputSchema: InstanceActionSchema,
       annotations: {
@@ -602,20 +620,26 @@ Args:
     },
     async (params: z.infer<typeof InstanceActionSchema>) => {
       try {
+        // Verified live: PATCH /api/host-instances/:id/ with
+        // { action:"revert", context_learning_unit_id:<hostId> }.
+        const ctx = params.machine_id ? parseHostId(params.machine_id) : undefined;
         const payload = await callEndpoint(ENDPOINTS.hostInstanceAction, {
           method: "PATCH",
           pathParams: { instanceId: params.instance_id },
+          data: {
+            action: "revert",
+            ...(ctx ? { context_learning_unit_id: Number(ctx) } : {}),
+          },
         });
-        const inst = normalizeHostInstance(payload);
-        const structured = { action: "revert", instanceId: params.instance_id, ...inst };
+        const ack = normalizeActionAck(payload);
+        const structured = { action: "revert", instanceId: params.instance_id, ...ack };
         if (params.response_format === ResponseFormat.JSON) {
           return toolResult(JSON.stringify(structured, null, 2), structured);
         }
         return toolResult(
           lines(
             `♻️ Revert requested for instance ${params.instance_id}.`,
-            kv("Status", inst.status),
-            kv("IP", inst.ip)
+            kv("Status", ack.message)
           ),
           structured
         );

@@ -116,5 +116,17 @@ export const StartMachineSchema = z
   .strict();
 
 export const InstanceActionSchema = z
-  .object({ instance_id: instanceId, response_format: responseFormat })
+  .object({
+    instance_id: instanceId,
+    machine_id: z
+      .string()
+      .max(200)
+      .optional()
+      .describe(
+        "The machine's numeric host id (e.g. '189') or slug ('kevin-189') this " +
+          "instance belongs to. Sent as context_learning_unit_id, which the " +
+          "portal includes when stopping/reverting. Recommended."
+      ),
+    response_format: responseFormat,
+  })
   .strict();

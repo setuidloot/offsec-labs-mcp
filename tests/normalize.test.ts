@@ -15,7 +15,7 @@ import {
   extractObjectives,
   labSlug,
   labsFromResult,
-  normalizeHostInstance,
+  normalizeActionAck,
   normalizeLabDoc,
   normalizeMachineDetails,
   normalizeProfile,
@@ -128,19 +128,27 @@ test("normalizeMachineDetails works with no catalog doc", () => {
   assert.equal(d.objectives, undefined);
 });
 
-test("normalizeHostInstance reads instance fields defensively", () => {
-  const inst = normalizeHostInstance({
-    id: "abc-123",
-    host: 189,
-    ip: "192.168.1.5",
-    status: "starting",
-    expires_at: "2026-06-02T12:00:00Z",
-  });
-  assert.equal(inst.instanceId, "abc-123");
-  assert.equal(inst.host, 189);
-  assert.equal(inst.ip, "192.168.1.5");
-  assert.equal(inst.status, "starting");
-  assert.equal(inst.expiresAt, "2026-06-02T12:00:00Z");
+test("normalizeActionAck maps the real async-action responses", () => {
+  // These fixtures are the actual live responses from start/stop/revert.
+  const start = normalizeActionAck(loadFixture("host_instance_start.json"));
+  assert.equal(start.message, "Deploy request in progress");
+  assert.equal(start.code, undefined);
+
+  const stop = normalizeActionAck(loadFixture("host_instance_stop.json"));
+  assert.equal(stop.message, "Stop action in progress");
+
+  const revert = normalizeActionAck(loadFixture("host_instance_revert.json"));
+  assert.equal(revert.message, "Revert action in progress");
+});
+
+test("normalizeActionAck surfaces error codes (real failure responses)", () => {
+  const busy = normalizeActionAck(loadFixture("host_action_in_progress.json"));
+  assert.equal(busy.code, "host_action_in_progress");
+  assert.equal(busy.message, "Permission denied.");
+
+  const limit = normalizeActionAck(loadFixture("host_concurrent_limit.json"));
+  assert.equal(limit.code, "user_has_started_machine");
+  assert.match(limit.message ?? "", /maximum concurrent machines/);
 });
 
 test("difficultyLabel maps known levels", () => {

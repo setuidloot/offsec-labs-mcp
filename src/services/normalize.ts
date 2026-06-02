@@ -5,7 +5,7 @@
  */
 
 import {
-  HostInstance,
+  ActionAck,
   LabSummary,
   MachineDetails,
   Profile,
@@ -226,19 +226,16 @@ export function normalizeWalkthroughs(payload: unknown): Walkthrough[] {
   return payload.filter(isObj).map(normalizeWalkthrough);
 }
 
-/** Normalize the instance returned by POST /api/host-instances/. */
-export function normalizeHostInstance(payload: unknown): HostInstance {
-  const o: Obj = isObj(payload)
-    ? isObj(payload.data)
-      ? (payload.data as Obj)
-      : payload
-    : {};
+/**
+ * Normalize the acknowledgement returned by the start/stop/revert endpoints.
+ * These are async actions; the body is just a status message (and, on failure,
+ * an error code like "host_action_in_progress" or "user_has_started_machine").
+ */
+export function normalizeActionAck(payload: unknown): ActionAck {
+  const o: Obj = isObj(payload) ? payload : {};
   return {
-    instanceId: asString(pick(o, ["id", "instance_id", "host_instance_id"])),
-    host: asNumber(pick(o, ["host", "host_id"])),
-    ip: asString(pick(o, ["ip", "ip_address", "ipAddress", "vpn_ip"])),
-    status: asString(pick(o, ["status", "state", "instance_state"])),
-    expiresAt: asString(pick(o, ["expires_at", "expiresAt", "end_time"])),
+    message: asString(pick(o, ["message", "detail"])),
+    code: asString(pick(o, ["code"])),
     raw: payload,
   };
 }
