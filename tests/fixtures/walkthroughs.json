@@ -1,0 +1,56 @@
+[
+  {
+    "id": 13,
+    "name": "PG_Play_01_walkthrough.txt",
+    "host": 9,
+    "content": null,
+    "order_index": 3,
+    "is_unblocked": false,
+    "top_level_learning_unit_code": "PLAY"
+  },
+  {
+    "id": 18,
+    "name": "PG_Play_02_walkthrough.txt",
+    "host": 14,
+    "content": null,
+    "order_index": 3,
+    "is_unblocked": false,
+    "top_level_learning_unit_code": "PLAY"
+  },
+  {
+    "id": 23,
+    "name": "PG_Play_03_walkthrough.txt",
+    "host": 19,
+    "content": null,
+    "order_index": 3,
+    "is_unblocked": false,
+    "top_level_learning_unit_code": "PLAY"
+  },
+  {
+    "id": 28,
+    "name": "PG_Play_04_walkthrough.txt",
+    "host": 24,
+    "content": null,
+    "order_index": 3,
+    "is_unblocked": false,
+    "top_level_learning_unit_code": "PRACTICE"
+  },
+  {
+    "id": 33,
+    "name": "PG_Play_05_walkthrough.txt",
+    "host": 29,
+    "content": null,
+    "order_index": 3,
+    "is_unblocked": false,
+    "top_level_learning_unit_code": "PRACTICE"
+  },
+  {
+    "id": 38,
+    "name": "PG_Play_06_walkthrough.txt",
+    "host": 34,
+    "content": null,
+    "order_index": 3,
+    "is_unblocked": false,
+    "top_level_learning_unit_code": "PRACTICE"
+  }
+]

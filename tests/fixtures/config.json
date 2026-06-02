@@ -1,0 +1,30 @@
+{
+  "API_BASE_URL": "https://portal.offsec.com",
+  "API_GATEWAY": "https://portal.offsec.com/services",
+  "WS_URL": "wss://portal.offsec.com/ws/events",
+  "TYPESENSE_CONFIG": {
+    "nearestNode": {
+      "host": "4aduxq2ngerym1sfp.a1.typesense.net",
+      "port": "443",
+      "protocol": "https"
+    },
+    "nodes": [
+      {
+        "host": "4aduxq2ngerym1sfp-1.a1.typesense.net",
+        "port": "443",
+        "protocol": "https"
+      },
+      {
+        "host": "4aduxq2ngerym1sfp-2.a1.typesense.net",
+        "port": "443",
+        "protocol": "https"
+      },
+      {
+        "host": "4aduxq2ngerym1sfp-3.a1.typesense.net",
+        "port": "443",
+        "protocol": "https"
+      }
+    ],
+    "connectionTimeoutSeconds": 60
+  }
+}

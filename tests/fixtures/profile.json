@@ -1,0 +1,20 @@
+{
+  "username": "testuser",
+  "type": 9,
+  "status": 8,
+  "first_name": "Test",
+  "middle_name": "",
+  "last_name": "User",
+  "suffix": "",
+  "is_subscribed_to_marketing_information": false,
+  "profile_image": null,
+  "emails": [
+    {
+      "id": 1,
+      "email_address": "test.user@example.com",
+      "is_primary": true,
+      "is_verified": true
+    }
+  ],
+  "is_staff": false
+}

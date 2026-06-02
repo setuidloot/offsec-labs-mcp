@@ -1,0 +1,259 @@
+/**
+ * Pure normalizers mapping the portal's real JSON into our typed interfaces.
+ * These are deliberately dependency-free so they can be unit-tested directly
+ * against captured fixtures.
+ */
+
+import {
+  HostInstance,
+  LabSummary,
+  MachineDetails,
+  Profile,
+  Walkthrough,
+} from "../types.js";
+import { PG_PLAY_GROUP, PORTAL_WEB_BASE } from "../constants.js";
+
+type Obj = Record<string, unknown>;
+
+function isObj(v: unknown): v is Obj {
+  return typeof v === "object" && v !== null;
+}
+
+function pick<T = unknown>(o: Obj, keys: string[]): T | undefined {
+  for (const k of keys) {
+    if (o[k] !== undefined && o[k] !== null) return o[k] as T;
+  }
+  return undefined;
+}
+
+function asString(v: unknown): string | undefined {
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  return undefined;
+}
+
+function asNumber(v: unknown): number | undefined {
+  if (typeof v === "number") return v;
+  if (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))) {
+    return Number(v);
+  }
+  return undefined;
+}
+
+function asStringArray(v: unknown): string[] | undefined {
+  if (Array.isArray(v)) {
+    const arr = v.map(asString).filter((x): x is string => Boolean(x));
+    return arr.length ? arr : undefined;
+  }
+  const s = asString(v);
+  return s ? [s] : undefined;
+}
+
+/** Kebab-case a machine name for slug building (e.g. "Empire breakout"). */
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Portal-style slug "name-id" (e.g. "kevin-189"). */
+export function labSlug(name: string | undefined, id: string): string {
+  const base = name ? slugify(name) : "";
+  return base ? `${base}-${id}` : id;
+}
+
+function machineUrl(slug: string): string {
+  return `${PORTAL_WEB_BASE}/machine/${slug}/overview/details`;
+}
+
+/**
+ * Map OffSec's numeric difficulty to a human label. The portal renders 1..5 as
+ * Easy..Insane; we keep the number too for callers who want to sort/filter.
+ */
+export function difficultyLabel(n: number | undefined): string | undefined {
+  if (n === undefined) return undefined;
+  const labels: Record<number, string> = {
+    1: "Easy",
+    2: "Intermediate",
+    3: "Hard",
+    4: "Very Hard",
+    5: "Insane",
+  };
+  return labels[n] ?? `Level ${n}`;
+}
+
+/** Extract lab-group names from a Typesense document's labGroups array. */
+export function extractGroups(doc: Obj): string[] {
+  const lg = doc.labGroups;
+  if (!Array.isArray(lg)) return [];
+  return lg
+    .map((g) => (isObj(g) ? asString(g.name) : asString(g)))
+    .filter((x): x is string => Boolean(x));
+}
+
+/** Normalize one Typesense lab document into a LabSummary. */
+export function normalizeLabDoc(doc: Obj): LabSummary {
+  const id = asString(pick(doc, ["contentId", "id"])) ?? "unknown";
+  const name = asString(pick(doc, ["name", "longName"])) ?? id;
+  const slug = labSlug(name, id);
+  const difficulty = asNumber(doc.difficulty);
+  return {
+    id,
+    name,
+    slug,
+    os: asString(doc.primaryOsName) ?? undefined,
+    osVersion: asString(doc.primaryOsVersion) ?? undefined,
+    difficulty,
+    difficultyLabel: difficultyLabel(difficulty),
+    points: asNumber(doc.points),
+    groups: extractGroups(doc),
+    releaseDate: asString(doc.releaseDate),
+    hasWalkthrough:
+      typeof doc.hasWalkthroughs === "boolean" ? doc.hasWalkthroughs : undefined,
+    url: machineUrl(slug),
+  };
+}
+
+/** Pull the documents out of a Typesense result block into LabSummaries. */
+export function labsFromResult(result: {
+  hits?: { document: Obj }[];
+}): LabSummary[] {
+  return (result.hits ?? []).map((h) => normalizeLabDoc(h.document));
+}
+
+/** Build the Typesense filter_by string for a given group (or all hosts). */
+export function buildLabFilter(group?: string): string {
+  const parts = ["labType:host"];
+  if (group && group.toLowerCase() !== "all") {
+    // Escape quotes defensively; group names are simple words in practice.
+    parts.push(`labGroups.name:${group.replace(/"/g, "")}`);
+  }
+  return parts.join(" && ");
+}
+
+/** Normalize the authenticated profile. */
+export function normalizeProfile(payload: unknown): Profile {
+  const o: Obj = isObj(payload) ? payload : {};
+  return {
+    username: asString(pick(o, ["username", "user_name"])),
+    firstName: asString(pick(o, ["first_name", "firstName"])),
+    lastName: asString(pick(o, ["last_name", "lastName"])),
+    email: extractPrimaryEmail(o),
+    type: asNumber(o.type),
+    status: asNumber(o.status),
+  };
+}
+
+function extractPrimaryEmail(o: Obj): string | undefined {
+  const emails = o.emails;
+  if (Array.isArray(emails)) {
+    const primary =
+      emails.find((e) => isObj(e) && e.is_primary) ??
+      emails.find((e) => isObj(e));
+    if (isObj(primary)) return asString(primary.email_address);
+  }
+  return asString(pick(o, ["email", "email_address"]));
+}
+
+/**
+ * Combine a catalog doc (may be undefined) with objectives/credentials text
+ * into full MachineDetails.
+ */
+export function normalizeMachineDetails(
+  doc: Obj | undefined,
+  objectives: string | undefined,
+  credentials: string | undefined,
+  idHint: string
+): MachineDetails {
+  const base: LabSummary = doc
+    ? normalizeLabDoc(doc)
+    : {
+        id: idHint,
+        name: idHint,
+        slug: idHint,
+        url: machineUrl(idHint),
+      };
+  return {
+    ...base,
+    description: doc ? asString(doc.description) : undefined,
+    authors: doc ? asStringArray(doc.authors) : undefined,
+    duration: doc ? asNumber(doc.duration) : undefined,
+    objectives: objectives && objectives.trim() ? objectives : undefined,
+    credentials: credentials && credentials.trim() ? credentials : undefined,
+  };
+}
+
+/** Pull objectives text out of GET /api/host-details/{id}/objectives. */
+export function extractObjectives(payload: unknown): string | undefined {
+  if (typeof payload === "string") return payload || undefined;
+  if (isObj(payload)) {
+    const v = asString(pick(payload, ["machine_objectives", "objectives"]));
+    return v && v.trim() ? v : undefined;
+  }
+  return undefined;
+}
+
+/** Pull credentials text out of GET /api/host-details/{id}/credentials. */
+export function extractCredentials(payload: unknown): string | undefined {
+  if (typeof payload === "string") return payload || undefined;
+  if (isObj(payload)) {
+    const v = asString(pick(payload, ["credentials"]));
+    return v && v.trim() ? v : undefined;
+  }
+  return undefined;
+}
+
+/** Normalize one walkthrough row. */
+export function normalizeWalkthrough(o: Obj): Walkthrough {
+  const host = asNumber(o.host) ?? 0;
+  const content = typeof o.content === "string" ? o.content : null;
+  return {
+    id: asNumber(o.id) ?? 0,
+    name: asString(o.name) ?? "",
+    host,
+    content,
+    isUnblocked:
+      typeof o.is_unblocked === "boolean" ? o.is_unblocked : content !== null,
+    category: asString(pick(o, ["top_level_learning_unit_code", "category"])),
+    url: `${PORTAL_WEB_BASE}/machine/${host}/overview/walkthrough`,
+  };
+}
+
+/** Normalize an array of walkthrough rows. */
+export function normalizeWalkthroughs(payload: unknown): Walkthrough[] {
+  if (!Array.isArray(payload)) return [];
+  return payload.filter(isObj).map(normalizeWalkthrough);
+}
+
+/** Normalize the instance returned by POST /api/host-instances/. */
+export function normalizeHostInstance(payload: unknown): HostInstance {
+  const o: Obj = isObj(payload)
+    ? isObj(payload.data)
+      ? (payload.data as Obj)
+      : payload
+    : {};
+  return {
+    instanceId: asString(pick(o, ["id", "instance_id", "host_instance_id"])),
+    host: asNumber(pick(o, ["host", "host_id"])),
+    ip: asString(pick(o, ["ip", "ip_address", "ipAddress", "vpn_ip"])),
+    status: asString(pick(o, ["status", "state", "instance_state"])),
+    expiresAt: asString(pick(o, ["expires_at", "expiresAt", "end_time"])),
+    raw: payload,
+  };
+}
+
+/**
+ * Parse a user-supplied machine identifier into a numeric host id when possible.
+ * Accepts "189", "kevin-189", or "Kevin" (returns undefined for the last — the
+ * caller must resolve a bare name via search).
+ */
+export function parseHostId(machineId: string): string | undefined {
+  const trimmed = machineId.trim();
+  if (/^\d+$/.test(trimmed)) return trimmed;
+  const m = trimmed.match(/-(\d+)$/);
+  if (m) return m[1];
+  return undefined;
+}
+
+export const DEFAULT_GROUP = PG_PLAY_GROUP;

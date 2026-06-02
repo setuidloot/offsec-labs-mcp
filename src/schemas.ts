@@ -1,0 +1,120 @@
+import { z } from "zod";
+import { ResponseFormat } from "./types.js";
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, PG_PLAY_GROUP } from "./constants.js";
+
+const responseFormat = z
+  .nativeEnum(ResponseFormat)
+  .default(ResponseFormat.MARKDOWN)
+  .describe(
+    "Output format: 'markdown' for human-readable (default) or 'json' for machine-readable structured data."
+  );
+
+const machineId = z
+  .string()
+  .min(1, "Machine id/slug is required")
+  .max(200)
+  .describe(
+    "The machine's numeric host id (e.g. '189'), its portal slug (e.g. " +
+      "'kevin-189'), or its name (e.g. 'Kevin'). Numeric id is most reliable."
+  );
+
+const instanceId = z
+  .string()
+  .min(1, "Instance id is required")
+  .max(200)
+  .describe(
+    "The running instance id returned by offsec_start_machine (NOT the machine id)."
+  );
+
+export const WhoAmISchema = z
+  .object({ response_format: responseFormat })
+  .strict();
+
+export const ListLabsSchema = z
+  .object({
+    group: z
+      .string()
+      .max(100)
+      .default(PG_PLAY_GROUP)
+      .describe(
+        "Lab group to list. 'Play' (PG Play, the default), 'Practice', " +
+          "'Offensive Cyber Range', or 'all' for every host-backed lab."
+      ),
+    search: z
+      .string()
+      .max(200)
+      .optional()
+      .describe(
+        "Optional full-text query (matched against code, name, longName, description)."
+      ),
+    os: z
+      .string()
+      .max(100)
+      .optional()
+      .describe("Optional case-insensitive substring filter on the machine OS."),
+    difficulty: z
+      .number()
+      .int()
+      .min(1)
+      .max(5)
+      .optional()
+      .describe("Optional exact difficulty filter (1=Easy … 5=Insane)."),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_PAGE_SIZE)
+      .default(DEFAULT_PAGE_SIZE)
+      .describe(`Maximum labs to return (1-${MAX_PAGE_SIZE}).`),
+    offset: z
+      .number()
+      .int()
+      .min(0)
+      .default(0)
+      .describe("Number of labs to skip for pagination."),
+    response_format: responseFormat,
+  })
+  .strict();
+
+export const MachineIdSchema = z
+  .object({ machine_id: machineId, response_format: responseFormat })
+  .strict();
+
+export const ListWalkthroughsSchema = z
+  .object({
+    category: z
+      .string()
+      .max(100)
+      .optional()
+      .describe(
+        "Optional category filter, e.g. 'PLAY' or 'PRACTICE' " +
+          "(matches top_level_learning_unit_code)."
+      ),
+    search: z
+      .string()
+      .max(200)
+      .optional()
+      .describe("Optional case-insensitive substring filter on walkthrough name."),
+    unblocked_only: z
+      .boolean()
+      .default(false)
+      .describe("If true, only return walkthroughs you've unblocked (with content)."),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_PAGE_SIZE)
+      .default(DEFAULT_PAGE_SIZE)
+      .describe(`Maximum walkthroughs to return (1-${MAX_PAGE_SIZE}).`),
+    offset: z.number().int().min(0).default(0).describe("Results to skip."),
+    response_format: responseFormat,
+  })
+  .strict();
+
+export const StartMachineSchema = z
+  .object({ machine_id: machineId, response_format: responseFormat })
+  .strict();
+
+export const InstanceActionSchema = z
+  .object({ instance_id: instanceId, response_format: responseFormat })
+  .strict();

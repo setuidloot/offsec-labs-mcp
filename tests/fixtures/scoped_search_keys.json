@@ -1,0 +1,109 @@
+[
+  {
+    "collection": "all-content",
+    "contentType": null,
+    "apiKeys": [
+      {
+        "type": "accessibility",
+        "key": "SCOPED_KEY_REDACTED",
+        "expiresAt": "2026-06-03T17:47:24.000+00:00"
+      },
+      {
+        "type": "visibility",
+        "key": "SCOPED_KEY_REDACTED",
+        "expiresAt": "2026-06-03T17:47:24.000+00:00"
+      }
+    ],
+    "facets": [
+      {
+        "name": "Type",
+        "filterKey": "contentType",
+        "type": "string",
+        "filterInDrilldown": true,
+        "facet": true,
+        "sort": false,
+        "values": [
+          {
+            "name": "Course",
+            "facetValue": "course",
+            "filterValue": "course"
+          },
+          {
+            "name": "Learning Path",
+            "facetValue": "learning_path",
+            "filterValue": "learning_path"
+          },
+          {
+            "name": "Learning Module",
+            "facetValue": "book_module",
+            "filterValue": "book_module"
+          },
+          {
+            "name": "Lab",
+            "facetValue": "lab",
+            "filterValue": "lab"
+          },
+          {
+            "name": "Assessment",
+            "facetValue": "assessment",
+            "filterValue": "assessment"
+          }
+        ],
+        "operator": "&&",
+        "facetKey": "contentType",
+        "optional": false
+      }
+    ]
+  },
+  {
+    "collection": "cornerstone-labs",
+    "contentType": null,
+    "apiKeys": [
+      {
+        "type": "accessibility",
+        "key": "SCOPED_KEY_REDACTED",
+        "expiresAt": "2026-06-03T17:47:23.000+00:00"
+      },
+      {
+        "type": "visibility",
+        "key": "SCOPED_KEY_REDACTED",
+        "expiresAt": "2026-06-03T17:47:23.000+00:00"
+      }
+    ],
+    "facets": [
+      {
+        "name": "Level",
+        "filterKey": "level",
+        "type": "string",
+        "filterInDrilldown": true,
+        "facet": true,
+        "sort": true,
+        "values": [
+          {
+            "name": "Fundamental",
+            "facetValue": 100,
+            "filterValue": 100
+          },
+          {
+            "name": "Intermediate",
+            "facetValue": 200,
+            "filterValue": 200
+          },
+          {
+            "name": "Advanced",
+            "facetValue": 300,
+            "filterValue": 300
+          },
+          {
+            "name": "Insane",
+            "facetValue": 400,
+            "filterValue": 400
+          }
+        ],
+        "operator": "&&",
+        "facetKey": "level",
+        "optional": true
+      }
+    ]
+  }
+]

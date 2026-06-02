@@ -1,0 +1,493 @@
+{
+  "results": [
+    {
+      "facet_counts": [],
+      "found": 65,
+      "hits": [
+        {
+          "document": {
+            "Attack Category": [
+              "Web App"
+            ],
+            "Attack Vector": [
+              "Login Page Brute Force"
+            ],
+            "Category": [
+              "Attack",
+              "Attack"
+            ],
+            "Job Roles": [
+              "Junior Penetration Tester"
+            ],
+            "Job Titles": [
+              "Penetration Tester"
+            ],
+            "MITRE ATT&CK Tactics": [
+              "Reconnaissance",
+              "Initial Access",
+              "Credential Access",
+              "Persistence",
+              "Privilege Escalation",
+              "Defense Evasion"
+            ],
+            "MITRE Sub-Techniques": [
+              "Scanning IP Blocks",
+              "Vulnerability Scanning",
+              "Password Spraying",
+              "Local Accounts",
+              "Setuid and Setgid"
+            ],
+            "MITRE Techniques": [
+              "Active Scanning",
+              "Valid Accounts",
+              "Brute Force",
+              "Exploit Public-Facing Application",
+              "Abuse Elevation Control Mechanism"
+            ],
+            "Skills": [
+              "Web Application Penetration Testing",
+              "Web Security Testing (Open Web Application Security Project Top Ten)",
+              "Penetration Testing",
+              "Vulnerability Scanning",
+              "Password Cracking (Hashcat, John The Ripper)",
+              "Scripting (Python, Bash, PowerShell)",
+              "Post-Engagement Reporting",
+              "Security Assessment"
+            ],
+            "authors": [],
+            "completionCount": 949,
+            "contentCode": "PG_Play_82",
+            "contentId": "207264",
+            "contentType": "lab",
+            "cpe": [],
+            "createdAt": "2025-03-12T18:58:19.000Z",
+            "description": "Adopt enumeration and web enumeration strategies to reveal potential weaknesses. Engage in brute force attacks to gain unauthorized access. Leverage privilege escalation by abusing sudo permissions for elevated control. This lab is designed to apply your ability to exploit system vulnerabilities effectively.",
+            "difficulty": 1,
+            "duration": 3600,
+            "hasCpe": false,
+            "hasDescription": true,
+            "hasLab": true,
+            "hasObjectives": true,
+            "hasText": false,
+            "hasVideo": false,
+            "hasWalkthroughs": true,
+            "id": "207264",
+            "image": "https://static.offsec.com/media/lms/content_tags/machines/linux/WEB.svg",
+            "isPartOfChallengeLab": true,
+            "isPartOfLab": false,
+            "labGroupId": 237940,
+            "labGroups": [
+              {
+                "name": "Offensive Cyber Range",
+                "topLevelParentId": 49389
+              },
+              {
+                "groupDescription": "Build your penetration testing fundamentals with beginner-friendly machines. Perfect for those starting their cybersecurity journey or preparing for entry-level roles. Master essential enumeration, exploitation, and privilege escalation techniques.",
+                "groupName": "Foundations Track",
+                "id": 237760,
+                "name": "Play",
+                "topLevelParentId": 1
+              }
+            ],
+            "labType": "host",
+            "level": "100",
+            "longName": "ColdBoxEasy",
+            "name": "ColdBoxEasy",
+            "objectives": "**After completion of this lab, learners will be able to:**\n* Discover hidden directories and enumerate the WordPress site for user accounts.\n* Use brute force techniques to crack credentials for WordPress users.\n* Gain a reverse shell by injecting malicious code into the WordPress theme files.\n* Enumerate for SUID binaries and leverage find to escalate privileges.\n* Obtain root access and capture the flag.",
+            "points": 10,
+            "primaryOsFamily": "Linux",
+            "primaryOsId": 1,
+            "primaryOsName": "Ubuntu",
+            "primaryOsVersion": "16",
+            "releaseDate": "2023-01-11T00:00:00.000+00:00",
+            "releaseDateTimestamp": 1673395200000,
+            "topLevelParentId": 1
+          },
+          "text_match": 100,
+          "text_match_info": {
+            "best_field_score": "0",
+            "best_field_weight": 12,
+            "fields_matched": 4,
+            "num_tokens_dropped": 1,
+            "score": "100",
+            "tokens_matched": 0,
+            "typo_prefix_score": 255
+          }
+        },
+        {
+          "document": {
+            "Attack Category": [
+              "Web App",
+              "Privilege Escalation"
+            ],
+            "Attack Vector": [
+              "Directory Brute Force",
+              "Command Injection",
+              "Remote Code Execution",
+              "Pass the Hash"
+            ],
+            "Category": [
+              "Attack",
+              "Attack"
+            ],
+            "Job Roles": [
+              "Junior Penetration Tester"
+            ],
+            "Job Titles": [
+              "Penetration Tester"
+            ],
+            "MITRE ATT&CK Tactics": [
+              "Reconnaissance",
+              "Resource Development",
+              "Credential Access",
+              "Initial Access",
+              "Command and Control",
+              "Privilege Escalation"
+            ],
+            "MITRE Sub-Techniques": [
+              "Wordlist Scanning",
+              "Scanning IP Blocks",
+              "Software",
+              "Vulnerabilities",
+              "Exploits",
+              "Tool",
+              "Password Guessing",
+              "Security Account Manager"
+            ],
+            "MITRE Techniques": [
+              "Active Scanning",
+              "Gather Victim Host Information",
+              "Obtain Capabilities",
+              "Brute Force",
+              "Exploit Public-Facing Application",
+              "Ingress Tool Transfer",
+              "Exploitation for Privilege Escalation",
+              "OS Credential Dumping"
+            ],
+            "Skills": [
+              "Web Application Penetration Testing",
+              "Network Penetration Testing",
+              "Vulnerability Scanning",
+              "Penetration Testing",
+              "Scripting (Python, Bash, PowerShell)",
+              "Post-Engagement Reporting",
+              "Security Assessment",
+              "Common Vulnerabilities And Exposures Analysis"
+            ],
+            "authors": [
+              {
+                "id": 68,
+                "name": "deathflash1411"
+              },
+              {
+                "id": 101,
+                "name": "deathflash1411"
+              }
+            ],
+            "completionCount": 370,
+            "contentCode": "PG_Play_83",
+            "contentId": "49073",
+            "contentType": "lab",
+            "cpe": [],
+            "createdAt": "2023-03-28T13:55:47.000Z",
+            "description": "Deploy enumeration and web enumeration techniques to discover system vulnerabilities. Capitalize on exploiting Schilix to gain an initial foothold. Implement privilege escalation tactics and use hive dumping to extract critical information. This lab is designed to harness your exploitation and privilege escalation skills.",
+            "difficulty": 1,
+            "duration": 3600,
+            "hasCpe": false,
+            "hasDescription": true,
+            "hasLab": true,
+            "hasObjectives": true,
+            "hasText": false,
+            "hasVideo": false,
+            "hasWalkthroughs": true,
+            "id": "49073",
+            "image": "https://static.offsec.com/media/lms/content_tags/machines/windows/Red-Team.svg",
+            "isPartOfChallengeLab": true,
+            "isPartOfLab": false,
+            "labGroupId": 237940,
+            "labGroups": [
+              {
+                "name": "Offensive Cyber Range",
+                "topLevelParentId": 49389
+              },
+              {
+                "name": "Play",
+                "topLevelParentId": 1
+              }
+            ],
+            "labType": "host",
+            "level": "100",
+            "longName": "Sams",
+            "name": "Sams",
+            "objectives": "**After completion of this lab, learners will be able to:**\n* Enumerate the target to identify services and CMS versions using tools like nmap, ffuf, and searchsploit.\n* Gain access to the SCHLIX CMS admin panel and upload a malicious file to execute RCE.\n* Establish a reverse shell connection and escalate privileges by exploiting HiveNightmare to extract sensitive files.\n* Extract and analyze registry hives (SAM, SECURITY, SYSTEM) to retrieve administrator hashes.\n* Perform a pass-the-hash attack to gain SYSTEM-level access and obtain the final flag.",
+            "points": 20,
+            "primaryOsFamily": "Windows",
+            "primaryOsId": 6,
+            "primaryOsName": "Windows",
+            "primaryOsVersion": "10",
+            "releaseDate": "2023-03-28T00:00:00.000+00:00",
+            "releaseDateTimestamp": 1679961600000,
+            "topLevelParentId": 1
+          },
+          "text_match": 100,
+          "text_match_info": {
+            "best_field_score": "0",
+            "best_field_weight": 12,
+            "fields_matched": 4,
+            "num_tokens_dropped": 1,
+            "score": "100",
+            "tokens_matched": 0,
+            "typo_prefix_score": 255
+          }
+        },
+        {
+          "document": {
+            "Attack Category": [
+              "Privilege Escalation",
+              "Web App",
+              "Endpoint Vulnerabilities"
+            ],
+            "Attack Vector": [
+              "Cron Job",
+              "Directory Brute Force",
+              "API attack",
+              "SSH Key Leakage "
+            ],
+            "Category": [
+              "Attack",
+              "Attack"
+            ],
+            "Job Roles": [
+              "Junior Penetration Tester"
+            ],
+            "Job Titles": [
+              "Penetration Tester"
+            ],
+            "MITRE ATT&CK Tactics": [
+              "Reconnaissance",
+              "Initial Access",
+              "Persistence",
+              "Privilege Escalation",
+              "Discovery",
+              "Execution"
+            ],
+            "MITRE Sub-Techniques": [
+              "Scanning IP Blocks",
+              "SSH Authorized Keys",
+              "Cron"
+            ],
+            "MITRE Techniques": [
+              "Active Scanning",
+              "Exploit Public-Facing Application",
+              "Account Manipulation",
+              "System Owner/User Discovery",
+              "Scheduled Task/Job"
+            ],
+            "Skills": [
+              "Network Penetration Testing",
+              "Vulnerability Scanning",
+              "Misconfiguration Identification (Cloud, Network, Web)",
+              "Web Application Penetration Testing",
+              "Security Assessment",
+              "Scripting (Python, Bash, PowerShell)",
+              "Penetration Testing"
+            ],
+            "authors": [
+              {
+                "id": 100,
+                "name": "alexertech"
+              }
+            ],
+            "completionCount": 2994,
+            "contentCode": "PG_Play_84",
+            "contentId": "49068",
+            "contentType": "lab",
+            "cpe": [],
+            "createdAt": "2023-03-28T12:58:37.000Z",
+            "description": "Employ enumeration and web enumeration methods to uncover system weaknesses. Apply privilege escalation techniques and capitalize on abusing crontabs for elevated access. This lab enhances your ability to identify and exploit misconfigurations effectively.",
+            "difficulty": 1,
+            "duration": 3600,
+            "hasCpe": false,
+            "hasDescription": true,
+            "hasLab": true,
+            "hasObjectives": true,
+            "hasText": false,
+            "hasVideo": false,
+            "hasWalkthroughs": true,
+            "id": "49068",
+            "image": "https://static.offsec.com/media/lms/content_tags/machines/linux/Non-WEB.svg",
+            "isPartOfChallengeLab": true,
+            "isPartOfLab": false,
+            "labGroupId": 237940,
+            "labGroups": [
+              {
+                "name": "Offensive Cyber Range",
+                "topLevelParentId": 49389
+              },
+              {
+                "groupDescription": "Build your penetration testing fundamentals with beginner-friendly machines. Perfect for those starting their cybersecurity journey or preparing for entry-level roles. Master essential enumeration, exploitation, and privilege escalation techniques.",
+                "groupName": "Foundations Track",
+                "id": 237760,
+                "name": "Play",
+                "topLevelParentId": 1
+              }
+            ],
+            "labType": "host",
+            "level": "100",
+            "longName": "Amaterasu",
+            "name": "Amaterasu",
+            "objectives": "**After completion of this lab, learners will be able to:**\n* Perform port scanning and identify a REST API service using tools like nmap, curl, and dirb.\n* Enumerate the REST API endpoints to discover file upload functionality.\n* Exploit the file upload to inject an SSH key into a low-privilege user's directory and gain SSH access.\n* Identify a vulnerable cron job that executes a tar command and manipulate it using Bash Gobbling to escalate privileges.\n* Gain root access to the lab and retrieve the final flag.",
+            "points": 10,
+            "primaryOsFamily": "Linux",
+            "primaryOsId": 10,
+            "primaryOsName": "Fedora",
+            "primaryOsVersion": "34",
+            "releaseDate": "2023-03-28T00:00:00.000+00:00",
+            "releaseDateTimestamp": 1679961600000,
+            "topLevelParentId": 1
+          },
+          "text_match": 100,
+          "text_match_info": {
+            "best_field_score": "0",
+            "best_field_weight": 12,
+            "fields_matched": 4,
+            "num_tokens_dropped": 1,
+            "score": "100",
+            "tokens_matched": 0,
+            "typo_prefix_score": 255
+          }
+        },
+        {
+          "document": {
+            "Attack Category": [
+              "Privilege Escalation",
+              "Web App"
+            ],
+            "Attack Vector": [
+              "SUID",
+              "Directory Brute Force",
+              "Command Injection"
+            ],
+            "Category": [
+              "Attack",
+              "Attack"
+            ],
+            "Job Roles": [
+              "Junior Penetration Tester"
+            ],
+            "Job Titles": [
+              "Penetration Tester"
+            ],
+            "MITRE ATT&CK Tactics": [
+              "Reconnaissance",
+              "Credential Access",
+              "Initial Access",
+              "Persistence",
+              "Privilege Escalation",
+              "Defense Evasion",
+              "Execution"
+            ],
+            "MITRE Sub-Techniques": [
+              "Scanning IP Blocks",
+              "Software",
+              "Credentials In Files",
+              "Local Accounts",
+              "Unix Shell",
+              "Dynamic Linker Hijacking",
+              "Masquerade Task or Service"
+            ],
+            "MITRE Techniques": [
+              "Active Scanning",
+              "Gather Victim Host Information",
+              "Unsecured Credentials",
+              "Valid Accounts",
+              "Exploit Public-Facing Application",
+              "Hijack Execution Flow",
+              "Command and Scripting Interpreter",
+              "Masquerading"
+            ],
+            "Skills": [
+              "Network Penetration Testing",
+              "Vulnerability Scanning",
+              "Web Application Penetration Testing",
+              "Misconfiguration Identification (Cloud, Network, Web)",
+              "Network Protocol Knowledge",
+              "Protocol Knowledge (Transmission Control Protocol, Internet Protocol, Domain Name System, Hypertext Transfer Protocol)",
+              "Security Assessment",
+              "Penetration Testing"
+            ],
+            "authors": [
+              {
+                "id": 99,
+                "name": "icex64"
+              }
+            ],
+            "completionCount": 1266,
+            "contentCode": "PG_Play_81",
+            "contentId": "43706",
+            "contentType": "lab",
+            "cpe": [],
+            "createdAt": "2023-01-24T22:11:30.000Z",
+            "description": "Harness enumeration and web enumeration to identify system weaknesses. Apply privilege escalation techniques to gain higher-level access. This lab is designed to deploy your expertise in discovering and exploiting vulnerabilities.",
+            "difficulty": 1,
+            "duration": 3600,
+            "hasCpe": false,
+            "hasDescription": true,
+            "hasLab": true,
+            "hasObjectives": true,
+            "hasText": false,
+            "hasVideo": false,
+            "hasWalkthroughs": true,
+            "id": "43706",
+            "image": "https://static.offsec.com/media/lms/content_tags/machines/linux/WEB.svg",
+            "isPartOfChallengeLab": true,
+            "isPartOfLab": false,
+            "labGroupId": 237760,
+            "labGroups": [
+              {
+                "groupDescription": "Build your penetration testing fundamentals with beginner-friendly machines. Perfect for those starting their cybersecurity journey or preparing for entry-level roles. Master essential enumeration, exploitation, and privilege escalation techniques.",
+                "groupName": "Foundations Track",
+                "id": 237760,
+                "name": "Play",
+                "topLevelParentId": 1
+              }
+            ],
+            "labType": "host",
+            "level": "100",
+            "longName": "Empire-breakout",
+            "name": "Empire-breakout",
+            "objectives": "**After completion of this lab, learners will be able to:**\n* Enumerate the target to discover usernames, hidden directories, and encoded data.\n* Decode encrypted text and obtain user credentials.\n* Gain initial access through a web terminal and obtain a reverse shell.\n* Use cap_dac_read_search capabilities to access sensitive files.\n* Exploit misconfigured binaries to escalate privileges and obtain root access.",
+            "points": 5,
+            "primaryOsFamily": "Linux",
+            "primaryOsId": 20,
+            "primaryOsName": "Debian",
+            "primaryOsVersion": "11",
+            "releaseDate": "2023-01-24T00:00:00.000+00:00",
+            "releaseDateTimestamp": 1674518400000,
+            "topLevelParentId": 1
+          },
+          "text_match": 100,
+          "text_match_info": {
+            "best_field_score": "0",
+            "best_field_weight": 12,
+            "fields_matched": 4,
+            "num_tokens_dropped": 1,
+            "score": "100",
+            "tokens_matched": 0,
+            "typo_prefix_score": 255
+          }
+        }
+      ],
+      "out_of": 2132,
+      "page": 1,
+      "request_params": {
+        "collection_name": "all-content-20260521-1336",
+        "first_q": "",
+        "per_page": 4,
+        "q": "*"
+      },
+      "search_cutoff": false,
+      "search_time_ms": 6
+    }
+  ]
+}

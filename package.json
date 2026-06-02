@@ -1,0 +1,33 @@
+{
+  "name": "offsec-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for managing your own authorized OffSec Proving Grounds (PG Play) labs: list, inspect, start/stop, status, and walkthrough access.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "offsec-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "pretest": "tsc -p tsconfig.test.json",
+    "test": "node --test dist-test/tests/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "axios": "^1.7.9",
+    "zod": "^3.24.1"
+  },
+  "optionalDependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

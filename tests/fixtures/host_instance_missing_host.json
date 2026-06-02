@@ -1,0 +1,11 @@
+{
+  "code": "multiple",
+  "errors": {
+    "host": [
+      {
+        "message": "This field is required.",
+        "code": "required"
+      }
+    ]
+  }
+}
