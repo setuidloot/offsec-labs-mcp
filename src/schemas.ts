@@ -117,16 +117,27 @@ export const StartMachineSchema = z
 
 export const InstanceActionSchema = z
   .object({
-    instance_id: instanceId,
+    instance_id: instanceId
+      .optional()
+      .describe(
+        "The running instance id. OPTIONAL: if omitted, the server discovers " +
+          "the running instance over the WebSocket (filtered by machine_id if " +
+          "given; OffSec allows only one concurrent machine, so omitting both " +
+          "targets the single running instance)."
+      ),
     machine_id: z
       .string()
       .max(200)
       .optional()
       .describe(
-        "The machine's numeric host id (e.g. '189') or slug ('kevin-189') this " +
-          "instance belongs to. Sent as context_learning_unit_id, which the " +
-          "portal includes when stopping/reverting. Recommended."
+        "The machine's numeric host id (e.g. '189'), slug ('kevin-189'), or name " +
+          "('Kevin'). Used to auto-discover the instance id and as " +
+          "context_learning_unit_id in the request."
       ),
     response_format: responseFormat,
   })
+  .strict();
+
+export const ListRunningLabsSchema = z
+  .object({ response_format: responseFormat })
   .strict();

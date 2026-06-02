@@ -32,11 +32,13 @@ import {
   normalizeWalkthroughs,
   parseHostId,
 } from "../services/normalize.js";
+import { getRunningInstances } from "../services/ws.js";
 import { errorResult, kv, lines, toolResult } from "../services/format.js";
-import { LabSummary, ResponseFormat } from "../types.js";
+import { LabSummary, ResponseFormat, RunningInstance } from "../types.js";
 import {
   InstanceActionSchema,
   ListLabsSchema,
+  ListRunningLabsSchema,
   ListWalkthroughsSchema,
   MachineIdSchema,
   StartMachineSchema,
@@ -104,6 +106,49 @@ async function resolveMachine(
     );
   }
   return { hostId: summary.id, doc };
+}
+
+/**
+ * Resolve the instance id + context host id for a stop/revert call. Uses an
+ * explicit instance_id if given; otherwise discovers running instances over the
+ * WebSocket (filtered by machine_id when provided).
+ */
+async function resolveInstance(params: {
+  instance_id?: string;
+  machine_id?: string;
+}): Promise<{ instanceId: string; hostId?: string }> {
+  const hostHint = params.machine_id ? parseHostId(params.machine_id) : undefined;
+  if (params.instance_id) {
+    return { instanceId: params.instance_id, hostId: hostHint };
+  }
+  const running = await getRunningInstances();
+  if (!running.length) {
+    throw new Error(
+      "No running instances found to act on. Start a machine first, or pass an " +
+        "explicit instance_id."
+    );
+  }
+  let candidates = running;
+  if (hostHint) {
+    candidates = running.filter((r) => String(r.host) === hostHint);
+    if (!candidates.length) {
+      throw new Error(
+        `No running instance matches machine ${params.machine_id}. Running: ` +
+          running.map((r) => `${r.name} (host ${r.host}, instance ${r.instanceId})`).join("; ")
+      );
+    }
+  }
+  if (candidates.length > 1) {
+    throw new Error(
+      "Multiple running instances; specify instance_id. Running: " +
+        candidates
+          .map((r) => `${r.name} (host ${r.host}, instance ${r.instanceId})`)
+          .join("; ")
+    );
+  }
+  const inst = candidates[0];
+  const ctxHost = hostHint ?? (inst.host != null ? String(inst.host) : undefined);
+  return { instanceId: inst.instanceId, hostId: ctxHost };
 }
 
 export function registerTools(server: McpServer): void {
@@ -484,6 +529,62 @@ Returns: the walkthrough content if unblocked, else guidance to start the machin
   );
 
   // ---------------------------------------------------------------------------
+  // offsec_list_running_labs — discover running instances (id + IP) over the WS
+  // ---------------------------------------------------------------------------
+  server.registerTool(
+    "offsec_list_running_labs",
+    {
+      title: "List Running OffSec Labs",
+      description: `List the machines currently running on your account, with their instance id, target IP, and state.
+
+This is the only way to obtain a running instance's id and IP: the portal delivers them over a WebSocket (no REST endpoint exposes them). This tool connects to that WebSocket, authenticates with your bearer token, and reads the live snapshot. Requires OFFSEC_BEARER_TOKEN.
+
+Use it to get the instance id for offsec_stop_machine / offsec_revert_machine — or just call those without an instance_id and they'll auto-discover.
+
+Args:
+  - response_format ('markdown' | 'json').
+
+Returns (JSON): { count, running: [ { instanceId, host, name, ip, state, startedAt } ] }.`,
+      inputSchema: ListRunningLabsSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (params: z.infer<typeof ListRunningLabsSchema>) => {
+      try {
+        const running: RunningInstance[] = await getRunningInstances();
+        const structured = { count: running.length, running };
+        if (params.response_format === ResponseFormat.JSON) {
+          return toolResult(JSON.stringify(structured, null, 2), structured);
+        }
+        if (!running.length) {
+          return toolResult("No labs are currently running.", structured);
+        }
+        const body = running
+          .map((r) =>
+            lines(
+              `## ${r.name ?? "machine"} (host ${r.host})`,
+              kv("Instance id", r.instanceId),
+              kv("IP", r.ip),
+              kv("State", r.state),
+              kv("Started", r.startedAt)
+            )
+          )
+          .join("\n\n");
+        return toolResult(
+          `# Running Labs (${running.length})\n\n${body}`,
+          structured
+        );
+      } catch (error) {
+        return errorResult(handleApiError(error, "ws:host_actions"));
+      }
+    }
+  );
+
+  // ---------------------------------------------------------------------------
   // offsec_start_machine — power on (creates a host instance)
   // ---------------------------------------------------------------------------
   server.registerTool(
@@ -548,13 +649,15 @@ Returns (JSON): { action, host, message }.`,
     "offsec_stop_machine",
     {
       title: "Stop an OffSec Machine",
-      description: `Stop (power off) a running instance by its instance id. Get the instance id from the running machine's portal page (offsec_start_machine cannot return it — see that tool's note).
+      description: `Stop (power off) a running instance.
+
+You do NOT need to know the instance id: omit it and the server discovers the running instance over the WebSocket (OffSec allows one concurrent machine, so it targets that one; pass machine_id to disambiguate). Or pass an explicit instance_id from offsec_list_running_labs.
 
 Asynchronous: returns "Stop action in progress". If a deploy/revert is mid-flight you'll get "host_action_in_progress" — retry shortly.
 
 Args:
-  - instance_id (string): the running instance id (NOT the machine id).
-  - machine_id (string, optional): the machine's host id/slug, sent as context.
+  - instance_id (string, optional): the running instance id; auto-discovered if omitted.
+  - machine_id (string, optional): host id/slug/name — disambiguates discovery and sets context.
   - response_format ('markdown' | 'json').`,
       inputSchema: InstanceActionSchema,
       annotations: {
@@ -568,23 +671,23 @@ Args:
       try {
         // Verified against the live portal: stop is PATCH /api/host-instances/:id/
         // with body { action:"stop", context_learning_unit_id:<hostId> }.
-        const ctx = params.machine_id ? parseHostId(params.machine_id) : undefined;
+        const { instanceId, hostId } = await resolveInstance(params);
         const payload = await callEndpoint(ENDPOINTS.hostInstanceAction, {
           method: "PATCH",
-          pathParams: { instanceId: params.instance_id },
+          pathParams: { instanceId },
           data: {
             action: "stop",
-            ...(ctx ? { context_learning_unit_id: Number(ctx) } : {}),
+            ...(hostId ? { context_learning_unit_id: Number(hostId) } : {}),
           },
         });
         const ack = normalizeActionAck(payload);
-        const structured = { action: "stop", instanceId: params.instance_id, ...ack };
+        const structured = { action: "stop", instanceId, ...ack };
         if (params.response_format === ResponseFormat.JSON) {
           return toolResult(JSON.stringify(structured, null, 2), structured);
         }
         return toolResult(
           lines(
-            `🛑 Stop requested for instance ${params.instance_id}.`,
+            `🛑 Stop requested for instance ${instanceId}.`,
             kv("Status", ack.message)
           ),
           structured
@@ -602,13 +705,15 @@ Args:
     "offsec_revert_machine",
     {
       title: "Revert an OffSec Machine",
-      description: `Revert (reset to a clean state) a running instance by its instance id. Useful when a box gets into a bad state.
+      description: `Revert (reset to a clean state) a running instance. Useful when a box gets into a bad state.
+
+You do NOT need the instance id: omit it and the server discovers the running instance over the WebSocket (pass machine_id to disambiguate). Or pass an explicit instance_id from offsec_list_running_labs.
 
 Asynchronous: returns "Revert action in progress". If another action is mid-flight you'll get "host_action_in_progress" — retry shortly.
 
 Args:
-  - instance_id (string): the running instance id.
-  - machine_id (string, optional): the machine's host id/slug, sent as context.
+  - instance_id (string, optional): the running instance id; auto-discovered if omitted.
+  - machine_id (string, optional): host id/slug/name — disambiguates discovery and sets context.
   - response_format ('markdown' | 'json').`,
       inputSchema: InstanceActionSchema,
       annotations: {
@@ -622,23 +727,23 @@ Args:
       try {
         // Verified live: PATCH /api/host-instances/:id/ with
         // { action:"revert", context_learning_unit_id:<hostId> }.
-        const ctx = params.machine_id ? parseHostId(params.machine_id) : undefined;
+        const { instanceId, hostId } = await resolveInstance(params);
         const payload = await callEndpoint(ENDPOINTS.hostInstanceAction, {
           method: "PATCH",
-          pathParams: { instanceId: params.instance_id },
+          pathParams: { instanceId },
           data: {
             action: "revert",
-            ...(ctx ? { context_learning_unit_id: Number(ctx) } : {}),
+            ...(hostId ? { context_learning_unit_id: Number(hostId) } : {}),
           },
         });
         const ack = normalizeActionAck(payload);
-        const structured = { action: "revert", instanceId: params.instance_id, ...ack };
+        const structured = { action: "revert", instanceId, ...ack };
         if (params.response_format === ResponseFormat.JSON) {
           return toolResult(JSON.stringify(structured, null, 2), structured);
         }
         return toolResult(
           lines(
-            `♻️ Revert requested for instance ${params.instance_id}.`,
+            `♻️ Revert requested for instance ${instanceId}.`,
             kv("Status", ack.message)
           ),
           structured

@@ -82,3 +82,23 @@ export interface TypesenseNode {
   port: string;
   protocol: string;
 }
+
+/**
+ * A currently-running lab instance, discovered over the WebSocket. This is the
+ * only place the instance id and target IP are available (no REST endpoint
+ * exposes them). Obtained by sign_in + subscribe("host_actions").
+ */
+export interface RunningInstance {
+  /** Host instance id — pass to stop/revert. */
+  instanceId: string;
+  /** Numeric host id (e.g. 189). */
+  host?: number;
+  /** Machine name (e.g. "Kevin"). */
+  name?: string;
+  /** Target IP address. */
+  ip?: string;
+  /** e.g. "started" | "deploying" | "stopping" | "reverting". */
+  state?: string;
+  startedAt?: string;
+  scheduledShutdown?: string;
+}

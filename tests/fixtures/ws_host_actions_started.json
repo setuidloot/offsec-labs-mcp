@@ -1,0 +1,53 @@
+[
+  {
+    "group": "auth",
+    "action": "sign_in",
+    "content": {
+      "status": "success",
+      "message": "You are now authenticated as: `testuser (id: 1)`",
+      "user": {
+        "id": 1,
+        "username": "testuser"
+      }
+    }
+  },
+  {
+    "group": "system",
+    "action": "subscribe",
+    "content": {
+      "status": "success",
+      "message": "You are now subscribed to these groups: `['host_actions']`.",
+      "subscribed_groups": [
+        "host_actions"
+      ]
+    }
+  },
+  {
+    "group": "host_actions",
+    "action": "started",
+    "content": [
+      {
+        "action_state": "success",
+        "action_requested_by_user": null,
+        "host_instance_state": "started",
+        "shared_host": false,
+        "course": "oll",
+        "host_instance": {
+          "id": 32134152,
+          "closed_at": null,
+          "started_at": "2026-06-02T19:11:52.006969",
+          "scheduled_shutdown": null,
+          "related_host": {
+            "id": 189,
+            "name": "Kevin"
+          },
+          "duration": null,
+          "ip": "192.168.180.45",
+          "parent": null,
+          "started_with_kali": false,
+          "status": null
+        }
+      }
+    ]
+  }
+]

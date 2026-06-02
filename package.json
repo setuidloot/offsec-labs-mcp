@@ -17,6 +17,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "axios": "^1.7.9",
+    "ws": "^8.21.0",
     "zod": "^3.24.1"
   },
   "optionalDependencies": {
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.0",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.7.2"
   },
   "engines": {

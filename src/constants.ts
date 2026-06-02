@@ -31,6 +31,16 @@ export const PORTAL_WEB_BASE =
 // The SPA's runtime config endpoint (unauthenticated JSON).
 export const CONFIG_JSON_PATH = "/config.json";
 
+// WebSocket events endpoint. The upgrade is UNAUTHENTICATED; you authenticate
+// by sending {action:"sign_in", value:<bearer token>} over the socket, then
+// {action:"subscribe", value:"host_actions"} to receive a snapshot of running
+// instances (the only source of instance ids + target IPs). From config.json's
+// WS_URL; overridable via OFFSEC_WS_URL.
+export const FALLBACK_WS_URL = "wss://portal.offsec.com/ws/events";
+
+// How long to listen for the host_actions snapshot before resolving (ms).
+export const WS_DISCOVERY_TIMEOUT = 8000;
+
 /**
  * Real, verified endpoint templates. {id}/{instanceId} are replaced at call time.
  */

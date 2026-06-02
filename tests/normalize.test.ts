@@ -16,6 +16,7 @@ import {
   labSlug,
   labsFromResult,
   normalizeActionAck,
+  parseRunningInstances,
   normalizeLabDoc,
   normalizeMachineDetails,
   normalizeProfile,
@@ -149,6 +150,44 @@ test("normalizeActionAck surfaces error codes (real failure responses)", () => {
   const limit = normalizeActionAck(loadFixture("host_concurrent_limit.json"));
   assert.equal(limit.code, "user_has_started_machine");
   assert.match(limit.message ?? "", /maximum concurrent machines/);
+});
+
+test("parseRunningInstances reads the real WebSocket host_actions snapshot", () => {
+  const msgs = loadFixture<unknown[]>("ws_host_actions_started.json");
+  const running = parseRunningInstances(msgs);
+  assert.equal(running.length, 1);
+  const inst = running[0];
+  assert.equal(inst.instanceId, "32134152");
+  assert.equal(inst.host, 189);
+  assert.equal(inst.name, "Kevin");
+  assert.equal(inst.ip, "192.168.180.45");
+  assert.equal(inst.state, "started");
+  assert.equal(inst.startedAt, "2026-06-02T19:11:52.006969");
+});
+
+test("parseRunningInstances ignores non-host_actions messages", () => {
+  const running = parseRunningInstances([
+    { group: "auth", action: "sign_in", content: { status: "success" } },
+    { group: "system", action: "subscribe", content: {} },
+  ]);
+  assert.deepEqual(running, []);
+});
+
+test("parseRunningInstances drops stopped/closed instances and de-dupes", () => {
+  const running = parseRunningInstances([
+    {
+      group: "host_actions",
+      action: "started",
+      content: [{ host_instance_state: "started", host_instance: { id: 5, related_host: { id: 1, name: "A" } } }],
+    },
+    // later state_change stops instance 5 -> should be removed
+    {
+      group: "host_actions",
+      action: "state_change",
+      content: { host_instance_state: "stopped", host_instance: { id: 5, related_host: { id: 1, name: "A" } } },
+    },
+  ]);
+  assert.deepEqual(running, []);
 });
 
 test("difficultyLabel maps known levels", () => {

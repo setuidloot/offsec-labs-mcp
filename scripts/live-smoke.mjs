@@ -8,6 +8,7 @@ import {
   ENDPOINTS,
   typesenseSearch,
 } from "../dist/services/client.js";
+import { getRunningInstances } from "../dist/services/ws.js";
 import {
   buildLabFilter,
   extractCredentials,
@@ -65,5 +66,13 @@ const unblocked = normalizeWalkthroughs(
   await callEndpoint(ENDPOINTS.walkthroughsUnblocked)
 );
 ok(`${unblocked.length} unblocked walkthrough(s) available`);
+
+console.log("6. offsec_list_running_labs (WebSocket discovery)");
+const running = await getRunningInstances();
+ok(
+  running.length
+    ? running.map((r) => `${r.name} → instance ${r.instanceId} @ ${r.ip ?? "deploying"} (${r.state})`).join("; ")
+    : "no labs currently running"
+);
 
 console.log("\nALL READ-ONLY TOOLS OK ✅");

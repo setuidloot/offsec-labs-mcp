@@ -9,6 +9,7 @@ import {
   LabSummary,
   MachineDetails,
   Profile,
+  RunningInstance,
   Walkthrough,
 } from "../types.js";
 import { PG_PLAY_GROUP, PORTAL_WEB_BASE } from "../constants.js";
@@ -251,6 +252,59 @@ export function parseHostId(machineId: string): string | undefined {
   const m = trimmed.match(/-(\d+)$/);
   if (m) return m[1];
   return undefined;
+}
+
+/**
+ * Parse running instances out of the WebSocket message stream.
+ *
+ * Relevant messages are `{group:"host_actions", action:"started"|"state_change",
+ * content: <event | event[]>}` where each event has a `host_instance` object:
+ * `{ id, ip, related_host:{id,name}, ... }` plus `host_instance_state`.
+ *
+ * Returns one entry per live host instance, de-duplicated by instance id, with
+ * later events overriding earlier ones (so a state_change supersedes the
+ * initial started snapshot). Stopped/closed instances are dropped.
+ */
+export function parseRunningInstances(messages: unknown[]): RunningInstance[] {
+  const byId = new Map<string, RunningInstance>();
+  for (const msg of messages) {
+    if (!isObj(msg)) continue;
+    if (msg.group !== "host_actions") continue;
+    const content = msg.content;
+    const events: unknown[] = Array.isArray(content) ? content : [content];
+    for (const ev of events) {
+      if (!isObj(ev)) continue;
+      const hi = ev.host_instance;
+      if (!isObj(hi)) continue;
+      const instanceId = asString(pick(hi, ["id", "instance_id"]));
+      if (!instanceId) continue;
+      const related = isObj(hi.related_host) ? (hi.related_host as Obj) : {};
+      const state = asString(
+        pick(ev, ["host_instance_state", "state", "action_state"])
+      );
+      // Drop instances that are no longer live.
+      if (state && /stopped|closed|reverted|deleted|error/i.test(state)) {
+        byId.delete(instanceId);
+        continue;
+      }
+      if (hi.closed_at) {
+        byId.delete(instanceId);
+        continue;
+      }
+      byId.set(instanceId, {
+        instanceId,
+        host: asNumber(pick(related, ["id"])),
+        name: asString(pick(related, ["name"])),
+        ip: asString(pick(hi, ["ip", "ip_address"])),
+        state,
+        startedAt: asString(pick(hi, ["started_at", "startedAt"])),
+        scheduledShutdown: asString(
+          pick(hi, ["scheduled_shutdown", "scheduledShutdown"])
+        ),
+      });
+    }
+  }
+  return Array.from(byId.values());
 }
 
 export const DEFAULT_GROUP = PG_PLAY_GROUP;

@@ -22,6 +22,7 @@ import {
   CONFIG_JSON_PATH,
   ENDPOINTS,
   FALLBACK_TYPESENSE_HOST,
+  FALLBACK_WS_URL,
   REQUEST_TIMEOUT,
   SCOPED_KEY_COLLECTIONS,
   TYPESENSE_COLLECTION,
@@ -81,11 +82,12 @@ export function buildPath(
 }
 
 export class MissingCredentialsError extends Error {
-  constructor() {
+  constructor(message?: string) {
     super(
-      "No OffSec credentials configured. Set OFFSEC_BEARER_TOKEN and/or " +
-        "OFFSEC_COOKIE (copied from your logged-in browser session) in the " +
-        "server environment."
+      message ??
+        "No OffSec credentials configured. Set OFFSEC_BEARER_TOKEN and/or " +
+          "OFFSEC_COOKIE (copied from your logged-in browser session) in the " +
+          "server environment."
     );
     this.name = "MissingCredentialsError";
   }
@@ -132,6 +134,7 @@ interface RuntimeConfig {
   typesenseHost: string; // nearest node host
   typesenseProtocol: string;
   typesensePort: string;
+  wsUrl: string; // e.g. wss://portal.offsec.com/ws/events
 }
 
 let cachedConfig: RuntimeConfig | null = null;
@@ -142,13 +145,15 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   // Allow full env override so the server keeps working offline / if config moves.
   const envGateway = process.env.OFFSEC_API_GATEWAY;
   const envTsHost = process.env.OFFSEC_TYPESENSE_HOST;
+  const envWsUrl = process.env.OFFSEC_WS_URL;
 
   let apiGateway = envGateway || `${API_BASE_URL}/services`;
   let typesenseHost = envTsHost || FALLBACK_TYPESENSE_HOST;
   let typesenseProtocol = "https";
   let typesensePort = "443";
+  let wsUrl = envWsUrl || FALLBACK_WS_URL;
 
-  if (!envGateway || !envTsHost) {
+  if (!envGateway || !envTsHost || !envWsUrl) {
     try {
       const { data } = await axios.get<Record<string, unknown>>(
         `${API_BASE_URL}${CONFIG_JSON_PATH}`,
@@ -166,12 +171,21 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
         typesenseProtocol = node.protocol || typesenseProtocol;
         typesensePort = node.port || typesensePort;
       }
+      if (!envWsUrl && typeof data.WS_URL === "string") {
+        wsUrl = data.WS_URL;
+      }
     } catch {
       // Fall back to the baked-in defaults; the tools still work.
     }
   }
 
-  cachedConfig = { apiGateway, typesenseHost, typesenseProtocol, typesensePort };
+  cachedConfig = {
+    apiGateway,
+    typesenseHost,
+    typesenseProtocol,
+    typesensePort,
+    wsUrl,
+  };
   return cachedConfig;
 }
 
