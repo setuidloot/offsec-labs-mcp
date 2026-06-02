@@ -9,6 +9,53 @@ walkthrough into your session for personal study.
 > walkthrough content — OffSec's community rules prohibit sharing complete
 > solutions/walkthroughs.
 
+## Documentation
+
+- **[Installation & Setup](docs/INSTALLATION.md)** — step-by-step install and
+  per-client config (Claude Desktop, Claude Code, Cursor, Windsurf, VS Code,
+  generic stdio/HTTP), token retrieval, troubleshooting.
+- **[Usage & Tool Reference](docs/USAGE.md)** — every tool's arguments, example
+  prompts, and sample outputs.
+- This README — quick start, architecture, and how the live portal is wired.
+
+## Quick start
+
+```bash
+git clone https://github.com/cbdmaul/offsec-labs-mcp.git
+cd offsec-labs-mcp
+npm install
+npm run build
+echo "$(pwd)/dist/index.js"   # the path you give your MCP client
+```
+
+Then add the server to your client (full per-platform steps in
+**[docs/INSTALLATION.md](docs/INSTALLATION.md)**):
+
+| Client | Where to configure |
+|--------|--------------------|
+| **Claude Desktop** | `claude_desktop_config.json` → `mcpServers` |
+| **Claude Code** | `claude mcp add offsec --env OFFSEC_BEARER_TOKEN=… -- node /path/dist/index.js` |
+| **Cursor** | `~/.cursor/mcp.json` (or `.cursor/mcp.json`) → `mcpServers` |
+| **Windsurf** | `~/.codeium/windsurf/mcp_config.json` → `mcpServers` |
+| **VS Code** | `.vscode/mcp.json` → `servers` |
+
+Minimal config (Claude Desktop / Cursor / Windsurf shape):
+
+```json
+{
+  "mcpServers": {
+    "offsec": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/offsec-labs-mcp/dist/index.js"],
+      "env": { "OFFSEC_BEARER_TOKEN": "paste-your-token-here" }
+    }
+  }
+}
+```
+
+Run `offsec_whoami` first to confirm auth. New here? Start with
+**[docs/INSTALLATION.md](docs/INSTALLATION.md)**.
+
 ## Status — mapped against the live portal
 
 The endpoints in `src/constants.ts` were **verified against the live portal**
@@ -43,7 +90,9 @@ can still be overridden via environment variables.
 | `offsec_stop_machine` | Power off the running instance (id auto-discovered, or explicit) | **yes** |
 | `offsec_revert_machine` | Revert the running instance to a clean state (id auto-discovered, or explicit) | **yes** |
 
-Every tool takes `response_format`: `markdown` (default) or `json`.
+Every tool takes `response_format`: `markdown` (default) or `json`. Full argument
+reference, example prompts, and sample outputs are in
+**[docs/USAGE.md](docs/USAGE.md)**.
 
 ### Identifiers
 
@@ -86,41 +135,20 @@ start returns `user_has_started_machine` until the first is stopped, and
 stop/revert return `host_action_in_progress` while a deploy is mid-flight — retry
 once the machine reaches `started`.
 
-## Setup
+## Authentication
 
-```bash
-npm install
-npm run build
-```
-
-### Authentication
-
-No password is handled. Copy a logged-in session value from your browser and
-provide **one** of these environment variables:
+No password is handled. Provide **one** of these environment variables (set in
+your MCP client config, or in a git-ignored `.env` for the smoke test):
 
 - `OFFSEC_BEARER_TOKEN` — sent as `Authorization: Bearer <token>` (what the
-  portal SPA itself uses; recommended)
-- `OFFSEC_COOKIE` — sent as the raw `Cookie:` header
+  portal SPA itself uses; **recommended**, and required for WebSocket discovery)
+- `OFFSEC_COOKIE` — raw `Cookie:` header (REST-only fallback)
 
 How to get the bearer: log into `portal.offsec.com`, open DevTools (F12) →
 **Network** → click any `/api/...` request → **Request Headers** → copy the
 `authorization:` value after `Bearer `. Tokens expire — refresh on a 401.
-
-### MCP client config (stdio)
-
-```json
-{
-  "mcpServers": {
-    "offsec": {
-      "command": "node",
-      "args": ["/absolute/path/to/offsec-mcp-server/dist/index.js"],
-      "env": { "OFFSEC_BEARER_TOKEN": "paste-your-token-here" }
-    }
-  }
-}
-```
-
-Run `offsec_whoami` first to confirm auth.
+Detailed, screenshot-friendly steps are in
+**[docs/INSTALLATION.md § 3](docs/INSTALLATION.md#3-get-your-offsec-bearer-token)**.
 
 ### Typical flow
 
