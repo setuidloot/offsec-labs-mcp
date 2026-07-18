@@ -338,6 +338,20 @@ export function handleApiError(error: unknown, attemptedEndpoint?: string): stri
             `Error: Not found (404)${where}. The machine/host id may be wrong, ` +
             `or this resource doesn't exist for your account.`
           );
+        case 400: {
+          const data = ax.response.data as unknown;
+          const s = typeof data === "string" ? data : JSON.stringify(data ?? "");
+          // OffSec caps walkthrough unblocking at one per day.
+          if (s.includes("invalid_too_many_per_day") || s.includes("more than 1 walkthrough")) {
+            return (
+              `Error: OffSec allows unblocking only ONE walkthrough per day${where}, and ` +
+              `today's unblock is already used. Read walkthroughs already unblocked ` +
+              `(offsec_list_walkthroughs with unblocked_only=true), or unblock this one ` +
+              `tomorrow / from the portal.`
+            );
+          }
+          return `Error: Bad request (400)${where}. Body: ${s.slice(0, 300)}`;
+        }
         case 405:
           return `Error: Method not allowed (405)${where}.`;
         case 429:

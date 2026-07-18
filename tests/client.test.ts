@@ -66,6 +66,12 @@ test("handleApiError maps HTTP statuses to actionable messages", () => {
   assert.match(handleApiError(mk(429), "/api/x"), /Rate limited \(429\)/);
   // endpoint is surfaced for debugging
   assert.match(handleApiError(mk(401), "/api/x"), /endpoint: \/api\/x/);
+  // the walkthrough "1 per day" cap gets a clear, actionable message (not a raw 400 body)
+  const dayLimit = new axios.AxiosError("boom", "ERR_BAD_REQUEST", undefined, undefined, {
+    status: 400, statusText: "", headers: {}, config: {} as any,
+    data: { code: "multiple", errors: { walkthrough: [{ code: "invalid_too_many_per_day" }] } },
+  });
+  assert.match(handleApiError(dayLimit, "/api/walkthroughs/unblocked"), /ONE walkthrough per day/);
 });
 
 test("handleApiError surfaces missing credentials", () => {
