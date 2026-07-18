@@ -39,7 +39,7 @@ plus the generic stdio/HTTP configuration for any other client.
 Clone the repo and produce `dist/index.js` (the entry point every client runs):
 
 ```bash
-git clone https://github.com/cbdmaul/offsec-labs-mcp.git
+git clone https://github.com/setuidloot/offsec-labs-mcp.git
 cd offsec-labs-mcp
 npm install
 npm run build

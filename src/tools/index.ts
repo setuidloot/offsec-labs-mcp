@@ -31,17 +31,20 @@ import {
   normalizeProfile,
   normalizeWalkthroughs,
   parseHostId,
+  walkthroughIdForHost,
 } from "../services/normalize.js";
 import { getRunningInstances } from "../services/ws.js";
 import { errorResult, kv, lines, toolResult } from "../services/format.js";
 import { LabSummary, ResponseFormat, RunningInstance } from "../types.js";
 import {
+  GetWalkthroughSchema,
   InstanceActionSchema,
   ListLabsSchema,
   ListRunningLabsSchema,
   ListWalkthroughsSchema,
   MachineIdSchema,
   StartMachineSchema,
+  UnblockWalkthroughSchema,
   WhoAmISchema,
 } from "../schemas.js";
 
@@ -106,6 +109,21 @@ async function resolveMachine(
     );
   }
   return { hostId: summary.id, doc };
+}
+
+/**
+ * Look up a machine's own walkthrough id (e.g. 563) from its host id (e.g. 559).
+ * The unblock endpoint keys off the walkthrough id, not the host id, so every
+ * unblock path resolves through here. Returns undefined if the account can see
+ * no walkthrough row for that host.
+ */
+async function resolveWalkthroughId(
+  hostNum: number
+): Promise<number | undefined> {
+  const rows = normalizeWalkthroughs(
+    await callEndpoint(ENDPOINTS.walkthroughs)
+  );
+  return walkthroughIdForHost(rows, hostNum);
 }
 
 /**
@@ -469,35 +487,53 @@ Returns (JSON): { total, count, offset, walkthroughs: [...], has_more }.`,
     "offsec_get_walkthrough",
     {
       title: "Get OffSec Machine Walkthrough",
-      description: `Retrieve the official walkthrough for a machine into your own authorized session. Walkthroughs unlock only AFTER you start the machine; locked ones return no content.
+      description: `Retrieve the official walkthrough for a machine into your own authorized session. Walkthroughs unlock only AFTER you start the machine; a locked one returns no content UNLESS you pass unblock: true.
 
 For YOUR personal study. Do not redistribute walkthrough content — OffSec's rules prohibit sharing complete solutions.
 
 Args:
   - machine_id (string): numeric host id, slug, or name.
+  - unblock (boolean, default false): if the walkthrough is still locked, unblock it first (same as the portal's Unlock button), then return its content. This mutates your account.
   - response_format ('markdown' | 'json').
 
-Returns: the walkthrough content if unblocked, else guidance to start the machine first.`,
-      inputSchema: MachineIdSchema,
+Returns: the walkthrough content if unblocked (or unblock: true was passed), else guidance to unblock/start the machine first.`,
+      inputSchema: GetWalkthroughSchema,
       annotations: {
-        readOnlyHint: true,
+        // Not read-only in general: unblock: true performs an account-mutating unlock.
+        readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: true,
         openWorldHint: true,
       },
     },
-    async (params: z.infer<typeof MachineIdSchema>) => {
+    async (params: z.infer<typeof GetWalkthroughSchema>) => {
       try {
         const hostId = parseHostId(params.machine_id) ??
           (await resolveMachine(params.machine_id)).hostId;
         const hostNum = Number(hostId);
-        const rows = normalizeWalkthroughs(
-          await callEndpoint(ENDPOINTS.walkthroughsUnblocked)
-        );
-        const match = rows.find((r) => r.host === hostNum && r.content);
+        const findContent = async () =>
+          normalizeWalkthroughs(
+            await callEndpoint(ENDPOINTS.walkthroughsUnblocked)
+          ).find((r) => r.host === hostNum && r.content);
+        let match = await findContent();
+        let unblockedNow = false;
+        // Locked, and the caller allowed us to unlock it: do the unblock the
+        // portal's button does (POST the walkthrough id), then re-read.
+        if (!match?.content && params.unblock) {
+          const wtId = await resolveWalkthroughId(hostNum);
+          if (wtId != null) {
+            await callEndpoint(ENDPOINTS.walkthroughsUnblocked, {
+              method: "POST",
+              data: { walkthrough: wtId },
+            });
+            unblockedNow = true;
+            match = await findContent();
+          }
+        }
         const structured = {
           host: hostNum,
           unblocked: Boolean(match),
+          unblockedNow,
           title: match?.name,
           url: `${match?.url ?? ""}`,
           content: match?.content ?? "",
@@ -508,8 +544,9 @@ Returns: the walkthrough content if unblocked, else guidance to start the machin
         if (!match?.content) {
           return toolResult(
             `No unblocked walkthrough for host ${hostNum}. Walkthroughs unlock ` +
-              `only after you START the machine (offsec_start_machine), then ` +
-              `it appears in offsec_list_walkthroughs with unblocked=yes.`,
+              `only after you START the machine (offsec_start_machine); then either ` +
+              `call this tool with unblock: true, use offsec_unblock_walkthrough, or ` +
+              `wait for it to appear in offsec_list_walkthroughs with unblocked=yes.`,
             structured
           );
         }
@@ -519,6 +556,88 @@ Returns: the walkthrough content if unblocked, else guidance to start the machin
             kv("Source", match.url),
             "",
             match.content
+          ),
+          structured
+        );
+      } catch (error) {
+        return errorResult(handleApiError(error, ENDPOINTS.walkthroughsUnblocked));
+      }
+    }
+  );
+
+  // ---------------------------------------------------------------------------
+  // offsec_unblock_walkthrough — unlock a walkthrough (the portal's Unlock button)
+  // ---------------------------------------------------------------------------
+  server.registerTool(
+    "offsec_unblock_walkthrough",
+    {
+      title: "Unblock an OffSec Machine Walkthrough",
+      description: `Unblock (unlock) a machine's walkthrough on your account — the same action the portal's walkthrough Unlock button performs (POST /api/walkthroughs/unblocked with the walkthrough id). After this, offsec_get_walkthrough returns its content and it shows unblocked=yes in offsec_list_walkthroughs.
+
+The machine must have been started at least once for the walkthrough to exist. This MUTATES your account (it unlocks the walkthrough).
+
+Args:
+  - machine_id (string): numeric host id, slug, or name — its walkthrough id is resolved for you. Provide this OR walkthrough_id.
+  - walkthrough_id (number, optional): the walkthrough's own id (e.g. 563) if you already know it (skips the lookup).
+  - response_format ('markdown' | 'json').
+
+Returns (JSON): { host?, walkthroughId, unblocked, alreadyUnblocked }.`,
+      inputSchema: UnblockWalkthroughSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (params: z.infer<typeof UnblockWalkthroughSchema>) => {
+      try {
+        if (!params.machine_id && params.walkthrough_id == null) {
+          return errorResult(
+            "Provide machine_id (host id/slug/name) or walkthrough_id."
+          );
+        }
+        let hostNum: number | undefined;
+        let wtId = params.walkthrough_id;
+        if (wtId == null && params.machine_id) {
+          const hostId = parseHostId(params.machine_id) ??
+            (await resolveMachine(params.machine_id)).hostId;
+          hostNum = Number(hostId);
+          wtId = await resolveWalkthroughId(hostNum);
+          if (wtId == null) {
+            return errorResult(
+              `No walkthrough exists for host ${hostNum}. Start the machine at ` +
+                `least once (offsec_start_machine) so its walkthrough is created.`
+            );
+          }
+        }
+        // Was it already unlocked? (keeps the response honest + idempotent).
+        const before = normalizeWalkthroughs(
+          await callEndpoint(ENDPOINTS.walkthroughsUnblocked)
+        ).find((r) => r.id === wtId);
+        const alreadyUnblocked = Boolean(before?.content);
+        if (!alreadyUnblocked) {
+          await callEndpoint(ENDPOINTS.walkthroughsUnblocked, {
+            method: "POST",
+            data: { walkthrough: wtId },
+          });
+        }
+        const structured = {
+          host: hostNum,
+          walkthroughId: wtId,
+          unblocked: true,
+          alreadyUnblocked,
+        };
+        if (params.response_format === ResponseFormat.JSON) {
+          return toolResult(JSON.stringify(structured, null, 2), structured);
+        }
+        return toolResult(
+          lines(
+            alreadyUnblocked
+              ? `Walkthrough ${wtId} was already unblocked.`
+              : `🔓 Unblocked walkthrough ${wtId}${hostNum ? ` (host ${hostNum})` : ""}.`,
+            "",
+            "Read it with offsec_get_walkthrough. For personal study only — don't redistribute."
           ),
           structured
         );

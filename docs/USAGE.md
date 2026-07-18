@@ -70,10 +70,20 @@ List walkthrough rows (one per machine) with their unblocked state.
 - **Returns:** `{ total, count, offset, walkthroughs: [{ id, name, host, isUnblocked, category, hasContent }], has_more }`
 
 ### `offsec_get_walkthrough`
-Retrieve an **unblocked** walkthrough's content (unlocks after you start the
-machine). For personal study — don't redistribute.
-- **Args:** `machine_id`, `response_format`
-- **Returns:** `{ host, unblocked, title, url, content }`
+Retrieve a walkthrough's content. Walkthroughs unlock after you start the
+machine; pass `unblock: true` to unlock a still-locked one first (mutating — the
+same action as the portal's Unlock button). For personal study — don't redistribute.
+- **Args:** `machine_id`, `unblock` (boolean, default false), `response_format`
+- **Returns:** `{ host, unblocked, unblockedNow, title, url, content }`
+
+### `offsec_unblock_walkthrough` *(mutating)*
+Unblock (unlock) a machine's walkthrough on your account — the portal's Unlock
+button, `POST /api/walkthroughs/unblocked {walkthrough:<id>}`. The walkthrough id
+is resolved from `machine_id` automatically (it differs from the host id); pass
+`walkthrough_id` to skip the lookup. The machine must have been started at least
+once for the walkthrough to exist.
+- **Args:** `machine_id` (or `walkthrough_id`), `response_format`
+- **Returns:** `{ host, walkthroughId, unblocked, alreadyUnblocked }`
 
 ### `offsec_list_running_labs`
 Discover the machines currently running on your account — **the only way to get

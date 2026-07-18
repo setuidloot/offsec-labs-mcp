@@ -228,6 +228,20 @@ export function normalizeWalkthroughs(payload: unknown): Walkthrough[] {
 }
 
 /**
+ * Find a machine's own walkthrough id from its host id. The unblock endpoint
+ * keys off the walkthrough id (e.g. 563), NOT the host id (e.g. 559), so this
+ * is the lookup every unblock path goes through. Returns undefined when the
+ * account has no walkthrough row for that host (machine never started).
+ */
+export function walkthroughIdForHost(
+  rows: Walkthrough[],
+  host: number
+): number | undefined {
+  const row = rows.find((r) => r.host === host);
+  return row && row.id ? row.id : undefined;
+}
+
+/**
  * Normalize the acknowledgement returned by the start/stop/revert endpoints.
  * These are async actions; the body is just a status message (and, on failure,
  * an error code like "host_action_in_progress" or "user_has_started_machine").
