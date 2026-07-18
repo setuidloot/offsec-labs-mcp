@@ -21,7 +21,7 @@ walkthrough into your session for personal study.
 ## Quick start
 
 ```bash
-git clone https://github.com/cbdmaul/offsec-labs-mcp.git
+git clone https://github.com/setuidloot/offsec-labs-mcp.git
 cd offsec-labs-mcp
 npm install
 npm run build
