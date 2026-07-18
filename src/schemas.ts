@@ -80,6 +80,45 @@ export const MachineIdSchema = z
   .object({ machine_id: machineId, response_format: responseFormat })
   .strict();
 
+const walkthroughId = z
+  .number()
+  .int()
+  .positive()
+  .describe(
+    "The walkthrough's OWN id (e.g. 563) — a different number from the machine/" +
+      "host id (e.g. 559). Normally resolved automatically from machine_id; pass " +
+      "it only to override that lookup."
+  );
+
+export const GetWalkthroughSchema = z
+  .object({
+    machine_id: machineId,
+    unblock: z
+      .boolean()
+      .default(false)
+      .describe(
+        "If true and the walkthrough is still locked, unblock it first — the same " +
+          "action the portal's walkthrough 'Unlock'/'Unblock' button performs — " +
+          "then return its content. This MUTATES your account (it unlocks the " +
+          "walkthrough); leave false (default) to only read an already-unblocked one."
+      ),
+    response_format: responseFormat,
+  })
+  .strict();
+
+export const UnblockWalkthroughSchema = z
+  .object({
+    machine_id: machineId
+      .optional()
+      .describe(
+        "The machine whose walkthrough to unblock (host id, slug, or name). Its " +
+          "walkthrough id is resolved automatically. Provide this OR walkthrough_id."
+      ),
+    walkthrough_id: walkthroughId.optional(),
+    response_format: responseFormat,
+  })
+  .strict();
+
 export const ListWalkthroughsSchema = z
   .object({
     category: z

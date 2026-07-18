@@ -23,6 +23,7 @@ import {
   normalizeWalkthroughs,
   parseHostId,
   slugify,
+  walkthroughIdForHost,
 } from "../src/services/normalize.js";
 
 type TsFixture = { results: { found?: number; hits?: { document: any }[] }[] };
@@ -98,6 +99,16 @@ test("normalizeWalkthroughs marks unblocked rows (content present)", () => {
   assert.equal(rows[0].host, 49073);
   assert.equal(rows[0].isUnblocked, true);
   assert.ok((rows[0].content ?? "").length > 0);
+});
+
+test("walkthroughIdForHost resolves the walkthrough id from a host id", () => {
+  const rows = normalizeWalkthroughs(loadFixture("walkthroughs.json"));
+  // Fixture: host 9 -> walkthrough id 13 (the two are deliberately different,
+  // which is exactly why the unblock endpoint needs this lookup).
+  assert.equal(walkthroughIdForHost(rows, 9), 13);
+  assert.equal(walkthroughIdForHost(rows, 14), 18);
+  // A host with no walkthrough row -> undefined (never started).
+  assert.equal(walkthroughIdForHost(rows, 999999), undefined);
 });
 
 test("objectives/credentials extraction handles the real shapes", () => {

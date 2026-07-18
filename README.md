@@ -84,7 +84,8 @@ can still be overridden via environment variables.
 | `offsec_list_labs` | List/search the catalog (default group `Play`); filter by OS/difficulty, paginate | no |
 | `offsec_get_machine_details` | OS, difficulty, points, groups, description, objectives, credentials | no |
 | `offsec_list_walkthroughs` | List walkthrough rows (host id, category, unblocked state) | no |
-| `offsec_get_walkthrough` | Retrieve an unblocked walkthrough's content | no |
+| `offsec_get_walkthrough` | Retrieve a walkthrough's content (pass `unblock: true` to unlock a locked one first) | `unblock` only |
+| `offsec_unblock_walkthrough` | Unblock (unlock) a machine's walkthrough — the portal's Unlock button (POST the walkthrough id) | **yes** |
 | `offsec_list_running_labs` | Discover running instances (id, IP, state) over the WebSocket | no |
 | `offsec_start_machine` | Power a machine on (async deploy; see notes below) | **yes** |
 | `offsec_stop_machine` | Power off the running instance (id auto-discovered, or explicit) | **yes** |
